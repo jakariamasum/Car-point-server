@@ -64,6 +64,31 @@ async function run() {
       });
     };
 
+    // verify admin middleware
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await userListCollection.findOne(query);
+      const isAdmin = user?.userType === "admin";
+      if (!isAdmin) {
+        return res.status(403).send({ message: "Forbidden access!" });
+      }
+      next();
+    };
+
+    // post new created user data to database
+    app.post("/newUserApi", async (req, res) => {
+      const newUserInfo = req.body;
+      const query = { email: newUserInfo?.email };
+      const existingUser = await userListCollection.findOne(query);
+      if (existingUser) {
+        return res.send({ message: "User already exists", insertedId: null });
+      } else {
+        const result = await userListCollection.insertOne(newUserInfo);
+        res.send(result);
+      }
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
