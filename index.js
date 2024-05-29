@@ -89,6 +89,69 @@ async function run() {
       }
     });
 
+    // post old product upload by user
+    app.post("/newCarSellByUser", verifyToken, async (req, res) => {
+      const newProductByUser = req.body;
+      const result = await productListingsBySellers.insertOne(newProductByUser);
+      res.send(result);
+    });
+
+    // post new saved ad to database
+    app.post("/newSavedAd", async (req, res) => {
+      const newSavedPostInfo = req.body;
+      const result = await savedAdsListCollection.insertOne(newSavedPostInfo);
+      res.send(result);
+    });
+
+    // post feedback by user
+    app.post("/userFeedback", async (req, res) => {
+      const newFeedback = req.body;
+      const result = await feedbackListCollection.insertOne(newFeedback);
+      res.send(result);
+    });
+
+    // post new bid details
+    app.post("/newBid", verifyToken, async (req, res) => {
+      const bidDetails = req.body;
+      const productId = bidDetails.productId;
+      const filter = { _id: new ObjectId(productId) };
+      const currentProduct = await productListingsBySellers.findOne(filter);
+      const currentBidAmount = currentProduct?.totalBids || 0;
+      const totalBids = currentBidAmount + 1;
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          totalBids: totalBids,
+        },
+      };
+      const updateTotalBid = await productListingsBySellers.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      if ((updateTotalBid.modifiedCount = 0)) {
+        return res.send(false);
+      }
+      const result = await allBidsCollection.insertOne(bidDetails);
+      res.send(result);
+    });
+
+    // get a single feedback
+    app.get("/singleFeedback/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { feedbackBy: id };
+      const result = await feedbackListCollection.findOne(query);
+      res.send(result);
+    });
+
+    // get all the feedback
+    app.get("/allFeedbacks", async (req, res) => {
+      const result = (
+        await feedbackListCollection.find().sort({ _id: -1 }).toArray()
+      ).slice(0, 5);
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
@@ -100,3 +163,13 @@ async function run() {
   }
 }
 run().catch(console.dir);
+
+// Checking if the server is running
+app.get("/", (req, res) => {
+  res.send("Car point Server is running fine");
+});
+
+// Checking the running port
+app.listen(port, () => {
+  console.log("Car point Server is running on port:", port);
+});
