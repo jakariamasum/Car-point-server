@@ -9,7 +9,7 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(process.env.URI, {
@@ -23,7 +23,7 @@ const client = new MongoClient(process.env.URI, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const userListCollection = client
       .db("carCollection")
@@ -283,6 +283,13 @@ async function run() {
     });
 
     // get bids for a single product
+
+    app.get("/allBids", async (req, res) => {
+      console.log(1);
+      const result = await allBidsCollection.find().toArray();
+      res.send(result);
+    });
+
     app.get("/allBidsForProduct/:id", async (req, res) => {
       const productId = req.params.id;
       const query = { productId: productId };
